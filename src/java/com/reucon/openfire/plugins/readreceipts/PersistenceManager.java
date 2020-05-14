@@ -20,18 +20,18 @@ public class PersistenceManager
     private static final Logger Log = LoggerFactory.getLogger(ReadReceiptsPlugin.class);
 
     private static final String ADD_READ_RECEIPT =
-        "INSERT INTO readReceipt (username, sender, ts) " +
+        "INSERT INTO readReceipt (userJID, senderJID, ts) " +
             "VALUES (?, ?, ?)";
 
     private static final String UPDATE_READ_RECEIPT =
         "UPDATE readReceipt SET ts = ? " +
-            "WHERE username = ? AND sender = ?";
+            "WHERE userJID = ? AND senderJID = ?";
 
     private static final String SELECT_READ_RECEIPT =
         "SELECT ts FROM readReceipt " +
-            "WHERE username = ? AND sender = ?";
+            "WHERE userJID = ? AND senderJID = ?";
 
-    public Integer getReceiptTimestamp(String username, String sender){
+    public Integer getReceiptTimestamp(String userJID, String senderJID){
 
         Integer ts = null;
         Connection con = null;
@@ -40,15 +40,15 @@ public class PersistenceManager
         try {
             con = DbConnectionManager.getConnection();
             pstmt = con.prepareStatement(SELECT_READ_RECEIPT);
-            pstmt.setString(1, username);
-            pstmt.setString(2, sender);
+            pstmt.setString(1, userJID);
+            pstmt.setString(2, senderJID);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
                 ts = rs.getInt("ts");
             }
         }
         catch (SQLException e) {
-            Log.error("Unable to select readReceipt for " + username + " - " + sender, e);
+            Log.error("Unable to select readReceipt for " + userJID + " - " + senderJID, e);
         }
         finally {
             DbConnectionManager.closeConnection(pstmt, con);
@@ -57,7 +57,7 @@ public class PersistenceManager
         return ts;
     }
 
-    public Integer saveReceipt(String username, String sender){
+    public Integer saveReceipt(String userJID, String senderJID){
 
         Connection con = null;
         PreparedStatement pstmt = null;
@@ -71,13 +71,13 @@ public class PersistenceManager
             con = DbConnectionManager.getConnection();
             pstmt = con.prepareStatement(UPDATE_READ_RECEIPT);
             pstmt.setInt(1, ts);
-            pstmt.setString(2, username);
-            pstmt.setString(3, sender);
+            pstmt.setString(2, userJID);
+            pstmt.setString(3, senderJID);
             rowsUpdated = pstmt.executeUpdate();
         }
         catch (SQLException e)
         {
-            Log.error("Unable to update readReceipt for " + username + " - " + sender, e);
+            Log.error("Unable to update readReceipt for " + userJID + " - " + senderJID, e);
         }
         finally
         {
@@ -91,8 +91,8 @@ public class PersistenceManager
             {
                 con = DbConnectionManager.getConnection();
                 pstmt = con.prepareStatement(ADD_READ_RECEIPT);
-                pstmt.setString(1, username);
-                pstmt.setString(2, sender);
+                pstmt.setString(1, userJID);
+                pstmt.setString(2, senderJID);
                 pstmt.setInt(3, ts);
                 rowsUpdated = pstmt.executeUpdate();
                 if (rowsUpdated != 0){
@@ -101,7 +101,7 @@ public class PersistenceManager
             }
             catch (SQLException e)
             {
-                Log.error("Unable to insert readReceipt for " + username + " - " + sender, e);
+                Log.error("Unable to insert readReceipt for " + userJID + " - " + senderJID, e);
             }
             finally
             {

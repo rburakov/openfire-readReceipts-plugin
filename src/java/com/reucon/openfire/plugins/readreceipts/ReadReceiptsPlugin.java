@@ -8,12 +8,10 @@ import org.jivesoftware.openfire.interceptor.InterceptorManager;
 import org.jivesoftware.openfire.interceptor.PacketInterceptor;
 import org.jivesoftware.openfire.interceptor.PacketRejectedException;
 import org.jivesoftware.openfire.session.Session;
-import org.jivesoftware.openfire.user.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xmpp.packet.Message;
 import org.xmpp.packet.Packet;
-import org.xmpp.packet.JID;
 
 import java.io.File;
 
@@ -22,7 +20,6 @@ import java.io.File;
  */
 public class ReadReceiptsPlugin implements Plugin, PacketInterceptor
 {
-    private UserManager userManager;
     private InterceptorManager interceptorManager;
     private PersistenceManager persistenceManager;
     private IQReadReceiptHandler iqReadReceiptHandler;
@@ -32,7 +29,6 @@ public class ReadReceiptsPlugin implements Plugin, PacketInterceptor
     {
         persistenceManager = new PersistenceManager();
         interceptorManager = InterceptorManager.getInstance();
-        userManager = XMPPServer.getInstance().getUserManager();
 
         // register with interceptor manager
         interceptorManager.addInterceptor(this);
@@ -75,20 +71,11 @@ public class ReadReceiptsPlugin implements Plugin, PacketInterceptor
 
             if (msg.getBody() != null && (msg.getType() == Message.Type.chat || msg.getType() == Message.Type.groupchat)) {
 
-                JID to = packet.getTo();
-                JID from = packet.getFrom();
+                String userJID = packet.getFrom().toBareJID();
+                String senderJID = packet.getTo().toBareJID();
 
-                try {
-                    User userFrom = userManager.getUser(from.getNode());
-                    String username = userFrom.getUsername();
-                    String sender = to.getNode();
-
-                    Log.debug("Updating timestamp for username {} and sender {}", new Object[]{username, sender});
-                    persistenceManager.saveReceipt(username, sender);
-                }
-                catch (UserNotFoundException e) {
-                    Log.debug("can't find user with name: " + to.getNode());
-                }
+                Log.debug("Updating timestamp for userJID {} and senderJID {}", new Object[]{userJID, senderJID});
+                persistenceManager.saveReceipt(userJID, senderJID);
             }
         }
     }

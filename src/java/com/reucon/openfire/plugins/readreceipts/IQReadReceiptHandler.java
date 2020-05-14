@@ -11,7 +11,6 @@ import org.jivesoftware.openfire.handler.IQHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xmpp.packet.IQ;
-import org.xmpp.packet.JID;
 import org.xmpp.packet.PacketError.Condition;
 
 public class IQReadReceiptHandler extends IQHandler implements ServerFeaturesProvider {
@@ -28,43 +27,39 @@ public class IQReadReceiptHandler extends IQHandler implements ServerFeaturesPro
 
     public IQ handleIQ(IQ packet) throws UnauthorizedException {
 
-        String from = packet.getFrom().getNode();
-
         Element queryElement = packet.getChildElement();
         String with = queryElement.attributeValue("with");
         String vv = queryElement.attributeValue("vv");
-        JID withJID = new JID(with);
-        String withNode = withJID.getNode();
         Integer ts = null;
 
-        Log.debug("Processing " + packet.getType() + (vv != null ? " vv" : "") + " request from " + packet.getFrom().getNode() + " with " + withNode);
+        Log.debug("Processing " + packet.getType() + (vv != null ? " vv" : "") + " request from " + packet.getFrom().toString() + " with " + with);
 
         IQ reply = IQ.createResultIQ(packet);
         Element query = reply.setChildElement("query", NAMESPACE);
 
-        if (from == null || withNode == null || packet.getType() == null) {
+        if (packet.getFrom() == null || packet.getType() == null || with == null) {
             reply.setError(Condition.forbidden);
-            return reply;
         }
         else {
+            String from = packet.getFrom().toBareJID();
             if (packet.getType().toString().equals("get")){
                 if (vv != null){
-                    ts = this.persistenceManager.getReceiptTimestamp(withNode, from);
+                    ts = this.persistenceManager.getReceiptTimestamp(with, from);
                     query.addAttribute("vv", "true");
                 }
                 else {
-                    ts = this.persistenceManager.getReceiptTimestamp(from, withNode);
+                    ts = this.persistenceManager.getReceiptTimestamp(from, with);
                 }
             }
             else if (packet.getType().toString().equals("set")){
-                ts = this.persistenceManager.saveReceipt(from, withNode);
+                ts = this.persistenceManager.saveReceipt(from, with);
             }
             if (ts != null){
                 query.addAttribute("ts", String.valueOf(ts));
             }
             query.addAttribute("with", with);
-            return reply;
         }
+        return reply;
     }
 
     public IQHandlerInfo getInfo() {
